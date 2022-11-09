@@ -26,7 +26,10 @@ pacman::p_load(ggplot2,
                shinythemes,
                thematic,
                shades,
-               shinyalert)
+               shinyalert,
+               mapview,
+               mapshot,
+               phantomjs)
 
 #thematic_shiny()
 
@@ -98,6 +101,13 @@ graph1_data$MEASURE_NAME <- gsub("_", " ", graph1_data$MEASURE_NAME)
 graph1_data$MEASURE_NAME<- tolower(graph1_data$MEASURE_NAME)
 graph1_data$MEASURE_NAME <- capitalize(graph1_data$MEASURE_NAME)
 
+#Adding percentage column for Graph 2
+graph1_data<- group_by(graph1_data,
+                       Financial_Year,
+                       Org_Name) %>%
+  mutate(Percent = round(MEASURE_VALUE/sum(MEASURE_VALUE)*100,0))
+
+graph1_data$Percent[is.na(graph1_data$Percent)] <- 0
 
 #Graph 2 data
 graph2_data<- subset(data,
@@ -150,8 +160,14 @@ df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'PERCENTAGE_TREATED_WITHIN_IC
 
 df_to_plot$MEASURE_VALUE <- as.numeric(as.character(df_to_plot$MEASURE_VALUE))
 
-# df_to_plot$Org_Name <- tolower(df_to_plot$Org_Name)
-# df_to_plot$Org_Name <- capitalize(df_to_plot$Org_Name)
+##Create all years 
+allyears<- df_to_plot %>%
+  group_by(Org_Name, MEASURE_NAME, ICB22CD) %>%
+  summarise(MEASURE_VALUE = sum(MEASURE_VALUE))
+
+allyears$Financial_Year<- "All years"
+
+test<- rbind(df_to_plot, allyears)
 
 #Demographic graph
 demographic_graph<- subset(data, MEASURE_ID %in% c("4.1", "4.2", "4.3", "4.4"))
@@ -289,11 +305,15 @@ ui <- fluidPage(
                                    br(),
                                    leafletOutput("map", height = 600),
                                    br(),
+                                   downloadButton("map_down"),
+                                   br(),
+                                   br(),
                                    br(),
                                    dataTableOutput("table")),
                           
                           tabPanel("Demographic breakdowns for primary bariatric procedures",
                                    value = 5,
+                                   useShinyalert(),
                                    br(),
                                    textOutput("text1"),
                                    plotlyOutput("demographic_distribution", height = 600),
@@ -339,18 +359,18 @@ server <- function(input, output, session){
       ggplotly(ggplot(subset(graph1_data,
                              Organisation_breakdown == input$organisation_type & 
                                Org_Name ==  input$organisation),
-                      aes(x=Financial_Year, 
-                          y=as.numeric(MEASURE_VALUE),
-                          fill=MEASURE_NAME,
-                          text = paste0("<b>Organisation: </b>", input$organisation, "\n",
+                      aes(x = Financial_Year, 
+                          y = Percent,
+                          fill = MEASURE_NAME,
+                          text = paste0(#"<b>Organisation: </b>", input$organisation, "\n",
                                         "<b>Procedure type: </b>", MEASURE_NAME, "\n",
-                                        "<b>Count: </b>", MEASURE_VALUE))) 
+                                        "<b>Percent: </b>", Percent, "%"))) 
                + geom_bar(stat = "identity", 
-                          position = "dodge") 
+                          position = "stack") 
                + shades::lightness(scale_fill_brewer(palette = "Blues"), scalefac(0.9)) 
                + guides(fill=guide_legend(title="Procedure type")) 
                + labs(x = "Finanical Year", 
-                      y = "Count")
+                      y = "Percent (%)")
                + theme(plot.margin = margin(t = 10,
                                             b = 10)), 
                tooltip = "text") %>%
@@ -365,8 +385,9 @@ server <- function(input, output, session){
                              yanchor='bottom',
                              xshift=0,
                              yshift=0,
-                             font = list(size=14, colour="grey"))) %>%
-        config(toImageButtonOptions = list(filename = paste0('Counts of procedures_2017-2022_',input$Org_Name), 
+                             font = list(size=14, colour="grey")),
+          hovermode = "x") %>%
+        config(toImageButtonOptions = list(filename = paste0('Percentage_procedures_2017-2022_',input$Org_Name), 
                                            format = "png", 
                                            width = 1200,
                                            height = 700),
@@ -386,12 +407,12 @@ server <- function(input, output, session){
                              Organisation_breakdown == input$organisation_type &
                                Org_Name == input$organisation),
                       aes(x = Financial_Year,
-                          y = Percent,
+                          y = MEASURE_VALUE,
                           group = CURRENCY,
                           color = CURRENCY,
-                          text = paste0("<b>Organisation: </b>", input$organisation, "\n", 
+                          text = paste0(#"<b>Organisation: </b>", input$organisation, "\n", 
                                         "<b>Procedure type: </b>", CURRENCY, "\n", 
-                                        "<b>Percentage: </b>", round(Percent,0), "%"))) 
+                                        "<b>Count: </b>", MEASURE_VALUE))) 
                + geom_line(stat = "identity") 
                + scale_color_manual("Procedure type", 
                                     values = c("#BCD2E8", 
@@ -401,13 +422,13 @@ server <- function(input, output, session){
                                                "#08204F")) 
                + scale_y_continuous(expand = c(0, 0)) 
                + labs(x = "Finanical Year", 
-                      y = "Percentage (%)")
+                      y = "Count")
                + theme(plot.margin = margin(t = 10,
                                             b = 10)),  
                tooltip = "text") %>%
         layout(annotations = list(x = 0, 
                                   y = 1, 
-                                  text = paste0("Proportion of people who had primary bariatric surgical procedures between 2017 and 2022 by procedure type in ", input$organisation),
+                                  text = paste0("Proportion of people who had primary bariatric surgical procedures between 2017 and 2022 by procedure type in ", "\n", input$organisation),
                                   showarrow = F, 
                                   xref='paper', 
                                   yref='paper',
@@ -418,7 +439,7 @@ server <- function(input, output, session){
                                   font = list(size=14, 
                                               colour="grey")),
                hovermode = "x unified") %>%
-        config(toImageButtonOptions = list(filename='Proportion_bariatric_surgery_2017-2022', 
+        config(toImageButtonOptions = list(filename =paste0('Count_bariatric_surgery_type_2017-2022_', input$organisation), 
                                            format = "png", 
                                            width = 1200,
                                            height = 700),
@@ -429,14 +450,7 @@ server <- function(input, output, session){
     
   })
   
-  #Text output for those CCGs that are too small to plot
-  # output$text<- renderText({
-  #     if(input$organisation %in% CCG_small){
-  #     
-  #       paste("Cannot plot the data due to small numbers. Please try another breakdown.")
-  #       
-  #   }})
-  
+#Error message pop up for CCGs that are too small
   observeEvent(input$organisation, {
     if(input$organisation %in% CCG_small){
       shinyalert(
@@ -470,33 +484,6 @@ server <- function(input, output, session){
     rv$click <- input$map_shape_click
   })
   
-  # datatableFiltered<- reactive({
-  #   if(!is.null(rv$click)){
-  # 
-  #   st_set_geometry(mapFiltered(), NULL) %>%
-  #     filter(ICB22CD == rv$click[1])
-  #     
-  #   } else {
-  #     st_set_geometry(mapFiltered(), NULL)
-  #   }
-  # 
-  # })
-  
-  # click<- reactiveVal(NULL)
-  # 
-  # observeEvent(input$map_shape_click, {
-  #   
-  #   click<- input$map_shape_click
-  #   
-  #   #subset your table with the id of the clicked polygon 
-  #   selected <- mapFiltered() %>%
-  #     st_set_geometry(NULL) %>% 
-  #     filter(ICB22CD == click$id)
-  # 
-  # })
-  
-  
-  
   
   output$mapTitle<- renderText({
     
@@ -507,7 +494,23 @@ server <- function(input, output, session){
   #Map output
   output$map<- renderLeaflet({
     
-    pal<- colorBin("Blues", domain = mapFiltered()$MEASURE_VALUE, na.color = "#808080")
+    pal<- colorBin("Blues", 
+                   domain = mapFiltered()$MEASURE_VALUE,
+                   na.color = "#808080", 
+                   bins = if(input$measure %in% "Rate per 100,000"){
+                     seq(0, 
+                         max(mapFiltered()$MEASURE_VALUE)+5, 
+                         by = 5)
+                   } else if(input$measure %in% "Patient count"){
+                     seq(0, 
+                         max(mapFiltered()$MEASURE_VALUE)+100,
+                         by = 100)
+                   } else if(input$measure %in% "Percentage of patients treated within ICB"){
+                     seq(0,
+                         max(mapFiltered()$MEASURE_VALUE),
+                         by = 20)
+                   }
+                   )
     
     leaflet(mapFiltered()) %>%
       addTiles() %>%
@@ -541,6 +544,30 @@ server <- function(input, output, session){
       )
     
   })
+  
+  # map that will be downloaded
+  mapdown <- reactive({
+    # we need to specify coordinates (and zoom level) that we are currently viewing
+    bounds <- input$map_bounds
+    latRng <- range(bounds$north, bounds$south)
+    lngRng <- range(bounds$east, bounds$west)
+    mapFiltered() %>% setView(lng = (lngRng[1]+lngRng[2])/2, 
+                              lat = (latRng[1]+latRng[2])/2, 
+                              zoom = input$map_zoom)
+  })
+  
+  output$map_down <- downloadHandler(
+    filename = 'mymap.pdf',
+    
+    content = function(file) {
+      # temporarily switch to the temp dir, in case you do not have write
+      # permission to the current working directory
+      owd <- setwd(tempdir())
+      on.exit(setwd(owd)) 
+      mapshot(mapdown(), file = file, cliprect = "viewport")
+    }
+  )
+  
   #Create data frame for table data
   
   # datatableFiltered<- reactive({
@@ -588,81 +615,118 @@ server <- function(input, output, session){
                   rownames = FALSE,
                   extensions = c("Buttons"),
                   options = list(dom = 'Bfrtip',
-                                 buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
-                  ),
+                                 buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
                   colnames = c("Financial year",
                                "ICB Code",
                                "NHS Integrated Care Board name",
                                "Measure",
-                               "Value"))
+                               "Value"),
+                  caption = paste0("Table displaying data seen in the map above.", "\n",
+                  " If select area on map it will filter the datatable.", "\n",
+                  " Select 'Reset filters' on the left hand side to reset the table")
+                  )
     
-    
-    
-    
-    
-    # DT::datatable(st_set_geometry(mapFiltered(), NULL)
-    #               [c("Financial_Year",
-    #                  "Org_Name",
-    #                  "MEASURE_NAME",
-    #                  "MEASURE_VALUE")],
-    #               rownames = FALSE,
-    #               options = list(pageLength = 10),
-    #               colnames = c("Financial year", 
-    #                            "NHS Integrated Care Board name",
-    #                            "Measure",
-    #                            "Value"))
-    # 
+
     
   })
   
-  # # Set up reactive values to store variables
-  # rv <- reactiveValues(click = NULL)
-  # 
-  # # Asign the clicked shape ID to the reactive variable rv$click
-  # observeEvent(input$map_shape_click, {
-  #   rv$click <- input$map_shape_click
-  # })
-  
-  #Demographic distribution graph
-  
+  #Error message pop up for CCGs that are too small
+  observeEvent(input$organisation1, {
+    if(input$organisation1 %in% CCG_small){
+      shinyalert(
+        title = "Error",
+        text = "Cannot plot the data due to small numbers. Please try another breakdown.",
+        size = "s", 
+        closeOnEsc = TRUE,
+        closeOnClickOutside = FALSE,
+        html = FALSE,
+        type = "error",
+        showConfirmButton = TRUE,
+        showCancelButton = FALSE,
+        confirmButtonText = "OK",
+        confirmButtonCol = "#AEDEF4",
+        imageUrl = "",
+        animation = TRUE) 
+    }
+  })
+
+  #Graph 4 - demographic distribution
   output$demographic_distribution<- renderPlotly({
     
-    if(input$organisation1 %notin% CCG_small){
-      
-      ggplotly(ggplot(subset(demographic_graph,
-                             Organisation_breakdown == input$organisation_type1 & 
+    ggplotly(ggplot(NULL, aes(x = CURRENCY, 
+                              y = Percent)) 
+    + geom_bar(data = subset(demographic_graph,
+                             Organisation_breakdown == input$organisation_type1 &
                                Org_Name ==  input$organisation1 &
                                Financial_Year == input$year1 &
                                MEASURE_NAME == input$demographic),
-                      aes(x = CURRENCY, 
-                          y = Percent,
-                          #fill = "Local percentage (%)",
-                          text = paste0("Organisation: ", input$organisation1, "\n",
-                                        "Percent: ", Percent, "%")))
-               + geom_bar(stat = "identity", fill = "lightblue")
-               
-               + geom_point(aes(x = CURRENCY, 
-                                y = Percent,
-                                text = paste0("Organisation: England", "\n",
-                                              "Percent: ", Percent, "%")),
-                            data = subset(demographic_graph,
-                                          Org_Name == "England" &
-                                            Financial_Year == input$year1 &
-                                            MEASURE_NAME == input$demographic)) 
-               + labs(x = input$demographic, y = "Percent (%)") 
-               + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)),
-               tooltip = "text") %>% 
-        layout(annotations = list(x = 0, 
-                                  y = 1, 
-                                  text = paste0(input$demographic, " distribution for ", input$organisation1, " in ", input$year1), 
-                                  showarrow = F, xref='paper', yref='paper', 
-                                  xanchor='left', yanchor='bottom', xshift=0, yshift=0,
-                                  font=list(size=14, colour="grey"))) %>%
-        config(toImageButtonOptions = list(filename='Graph of bariatric surgery distribution', format = "png", width = 1200,height = 700),
-               displaylogo = FALSE,
-               modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
-      
-    }
+               aes(fill = CURRENCY,
+                   text = paste0("Organisation: ", input$organisation1, "\n",
+                                 "Demographic attribute: ", CURRENCY, "\n",
+                                 "Percent: ", Percent, "%")),
+               stat = "identity") 
+    + geom_line(data = subset(demographic_graph,
+                              Org_Name == "England" &
+                                Financial_Year == input$year1 &
+                                MEASURE_NAME == input$demographic),
+                aes(group = 1,
+                     text = paste0("Organisation: England", "\n",
+                                   "Demographic attribute: ", CURRENCY, "\n",
+                                   "Percent: ", Percent, "%")))
+    + scale_fill_brewer("Blues")
+    + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown")))
+    + labs(x = input$demographic, y = "Percent (%)")
+    + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)),
+    tooltip = "text") %>%
+    layout(annotations = list(x = 0,
+                              y = 1,
+                              text = paste0(input$demographic, " distribution for ", input$organisation1, " in ", input$year1),
+                              showarrow = F, xref='paper', yref='paper',
+                              xanchor='left', yanchor='bottom', xshift=0, yshift=0,
+                              font=list(size=14, colour="grey")),
+           hovermode = "x") %>%
+    config(toImageButtonOptions = list(filename='Graph of bariatric surgery distribution', format = "png", width = 1200,height = 700),
+           displaylogo = FALSE,
+           modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
+    
+    
+    
+      # ggplotly(ggplot(subset(demographic_graph,
+      #                        Organisation_breakdown == input$organisation_type1 &
+      #                          Org_Name ==  input$organisation1 &
+      #                          Financial_Year == input$year1 &
+      #                          MEASURE_NAME == input$demographic),
+      #                 aes(x = CURRENCY,
+      #                     y = Percent,
+      #                     fill = CURRENCY,
+      #                     text = paste0("Organisation: ", input$organisation1, "\n",
+      #                                   "Percent: ", Percent, "%")))
+      #          + geom_bar(stat = "identity") #fill = "lightblue")
+      #          + scale_fill_gradient()
+      # 
+      #          + geom_line(aes(x = CURRENCY,
+      #                          y = Percent,
+      #                          group = 1,
+      #                          text = paste0("Organisation: England", "\n",
+      #                                         "Percent: ", Percent, "%")),
+      #                      data = subset(demographic_graph,
+      #                                     Org_Name == "England" &
+      #                                       Financial_Year == input$year1 &
+      #                                       MEASURE_NAME == input$demographic))
+      #          + labs(x = input$demographic, y = "Percent (%)")
+      #          + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)),
+      #          tooltip = "text") %>%
+      #   layout(annotations = list(x = 0,
+      #                             y = 1,
+      #                             text = paste0(input$demographic, " distribution for ", input$organisation1, " in ", input$year1),
+      #                             showarrow = F, xref='paper', yref='paper',
+      #                             xanchor='left', yanchor='bottom', xshift=0, yshift=0,
+      #                             font=list(size=14, colour="grey")),
+      #          hovermode = "x unified") %>%
+      #   config(toImageButtonOptions = list(filename='Graph of bariatric surgery distribution', format = "png", width = 1200,height = 700),
+      #          displaylogo = FALSE,
+      #          modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
+
   })
   
   #Demographic distribution graph 
@@ -678,17 +742,18 @@ server <- function(input, output, session){
                                MEASURE_NAME == input$demographic),
                       aes(fill = CURRENCY, 
                           x = Org_Name,
-                          y = MEASURE_VALUE, 
+                          y = Percent, 
                           text = paste0("Organisation: ", Org_Name, "\n",
                                         "Demographic attribute: ", CURRENCY, "\n",
-                                        "Count: ", MEASURE_VALUE))) 
+                                        "Percent: ", Percent, "%"))) 
                + geom_bar(stat = "identity", 
-                          position = "stack") 
-               + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown"))) 
-               + shades::lightness(scale_fill_manual(values = mycolors), scalefac(0.9))  
+                          position = position_stack(reverse = TRUE)) 
+               + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown")))
+               + scale_fill_brewer("Blues")
+#               + shades::lightness(scale_fill_manual(values = mycolors), scalefac(0.9))  
                + coord_flip() 
                + theme(axis.title.y = element_blank()) 
-               + labs(y = "Count"),
+               + labs(y = "Percent (%)"),
                tooltip = "text") %>%
         layout(annotations = list(x = 0, y = 1, 
                                   text = paste0("Proportion of ", input$demographic, " for ", input$organisation_type1, " in ", input$year1), 
