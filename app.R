@@ -60,9 +60,9 @@ data$MEASURE_NAME<- case_when(
   data$MEASURE_NAME == "DEMOGRAPHIC_AGE" ~ "Age",
   data$MEASURE_NAME == "DEMOGRAPHIC_ETHNICITY" ~ "Ethnicity",
   data$MEASURE_NAME == "DEMOGRAPHIC_GENDER" ~ "Gender",
-  data$MEASURE_NAME == "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE" ~ "Patient count",
-  data$MEASURE_NAME == "RATE PER 100,000" ~ "Rate per 100,000",
-  data$MEASURE_NAME == "PERCENTAGE_TREATED_WITHIN_ICB " ~ "Percentage of patients treated within ICB",
+#  data$MEASURE_NAME == "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE" ~ "Patient count",
+#  data$MEASURE_NAME == "RATE PER 100,000" ~ "Rate per 100,000",
+#  data$MEASURE_NAME == "PERCENTAGE_TREATED_WITHIN_ICB " ~ "Percentage of patients treated within ICB",
   TRUE ~ data$MEASURE_NAME
 )
 
@@ -119,9 +119,9 @@ df_to_plot<- subset(df_to_plot,
                                MEASURE_VALUE))
 
 #Formatting and tidying
-# df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'PRIMARY_BARIATRIC_SURGICAL_PROCEDURE'] <- 'Patient count'
-# df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'RATE PER 100,000'] <- 'Rate per 100,000'
-# df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'PERCENTAGE_TREATED_WITHIN_ICB'] <- 'Percentage of patients treated within ICB'
+df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'PRIMARY_BARIATRIC_SURGICAL_PROCEDURE'] <- 'Patient count'
+df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'RATE PER 100,000'] <- 'Rate per 100,000'
+df_to_plot$MEASURE_NAME[df_to_plot$MEASURE_NAME == 'PERCENTAGE_TREATED_WITHIN_ICB'] <- 'Percentage of patients treated within ICB'
 
 df_to_plot$MEASURE_VALUE <- as.numeric(as.character(df_to_plot$MEASURE_VALUE))
 
@@ -175,6 +175,21 @@ is.nan.data.frame <- function(x)
 
 graph2_data[is.nan(graph2_data)] <- 0
 
+#ICB graph data
+ICBdata<- subset(data,
+                 MEASURE_NAME %in% c("RATE PER 100,000",
+                                     "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE",
+                                     "PERCENTAGE_TREATED_WITHIN_ICB"))
+
+#Formatting and tidying
+ICBdata$MEASURE_NAME[ICBdata$MEASURE_NAME == 'PRIMARY_BARIATRIC_SURGICAL_PROCEDURE'] <- 'Patient count'
+ICBdata$MEASURE_NAME[ICBdata$MEASURE_NAME == 'RATE PER 100,000'] <- 'Rate per 100,000'
+ICBdata$MEASURE_NAME[ICBdata$MEASURE_NAME == 'PERCENTAGE_TREATED_WITHIN_ICB'] <- 'Percentage of patients treated within ICB'
+
+ICBdata$MEASURE_VALUE <- as.numeric(as.character(ICBdata$MEASURE_VALUE))
+
+
+
 #Demographic graph
 demographic_graph<- subset(data, MEASURE_ID %in% c("4.1", "4.2", "4.3", "4.4"))
 
@@ -191,7 +206,12 @@ demographic_graph[is.nan(demographic_graph)] <- 0
 #Colours for deprivation
 #Define the number of colors you want
 nb.cols <- 11
-mycolors <- colorRampPalette(brewer.pal(9, "Blues"))(nb.cols)
+depcolors <- colorRampPalette(brewer.pal(9, "Blues"))(nb.cols)
+
+#Colors for ICB
+# Define the number of colors you want
+nb.cols <- 42
+ICBcolors <- colorRampPalette(brewer.pal(9, "Set1"))(nb.cols)
 
 #--------------------------------------------------------------------------------------
 
@@ -233,7 +253,13 @@ ui <- fluidPage(
                        
                        selectInput("measure", label = "Select a measure type:",
                                    choices = unique(df_to_plot$MEASURE_NAME),
-                                   selected = "Rate per 100,000")),
+                                   selected = "Rate per 100,000"),
+                       
+                       selectInput("ICB", label = "Select ICB:",
+                                   choices = unique(ICBdata$Org_Name),
+                                   #selected = "BATH AND NORTH EAST SOMERSET, SWINDON AND WILTSHIRE ICB",
+                                   selected = NULL,
+                                   multiple = TRUE)),
       
       conditionalPanel(condition = "input.conditionedPanelsTab1 == 4",
                        
@@ -353,7 +379,10 @@ ui <- fluidPage(
                                    br(),
                                    br(),
                                    br(),
-                                   dataTableOutput("table")),
+                                   dataTableOutput("table"),
+                                   br(),
+                                   br(),
+                                   plotlyOutput("rateGraph", height = 600, width = 1000)),
                           
                           tabPanel("Demographic breakdowns for primary bariatric procedures",
                                    value = 4,
@@ -485,7 +514,7 @@ server <- function(input, output, session){
                tooltip = "text") %>%
         layout(annotations = list(x = 0, 
                                   y = 1, 
-                                  text = paste0("Proportion of people who had primary bariatric surgical procedures between 2017 and 2022 by procedure type in ", "\n", input$organisation),
+                                  text = paste0("Proportion of people who had primary bariatric surgical procedures between 2017 and 2022 by procedure type ", "\n", "in ", input$organisation),
                                   showarrow = F, 
                                   xref='paper', 
                                   yref='paper',
@@ -589,7 +618,7 @@ server <- function(input, output, session){
           layerId = ~ICB22CD,
           fillColor = ~pal(MEASURE_VALUE),
           color = "grey",
-          fillOpacity = 0.7,
+          fillOpacity = 0.9,
           label = paste0(
             "<strong> Organisation: </strong> ",
             mapFiltered()$Org_Name, "<br/> ",
@@ -611,7 +640,7 @@ server <- function(input, output, session){
           position = "bottomleft") %>%
         leaflet::addLegend(
           pal = pal, values = ~MEASURE_VALUE,
-          opacity = 0.9, title = input$measure
+          opacity = 1, title = input$measure
         )
     
   }) # end of foundational.map()
@@ -657,6 +686,8 @@ server <- function(input, output, session){
   ) # end of downloadHandler() function
   
   
+  
+  
   datatableFiltered<- reactive({
     rowsinbreakdown<- which(df_to_plot$Financial_Year == input$year)
     df_to_plot[rowsinbreakdown,]
@@ -696,11 +727,49 @@ server <- function(input, output, session){
     
   })
   
-  output$rateGraph<- renderPlotly({
+  output$ICBGraph<- renderPlotly({
     
-    ggplotly(ggplot(data = subset(data,
-                                  Financial_Year == input$year &
-                                    MEASURE_NAME == "Rate per 100,000")))
+    ggplotly(ggplot(ICBdata %>% filter(Org_Name %in% input$ICB & MEASURE_NAME == input$measure),
+                    aes(x = Financial_Year,
+                        y = MEASURE_VALUE,
+                        group = Org_Name,
+                        color = Org_Name, 
+                        text = paste0("<b>Financial Year: </b>", Financial_Year, "\n",
+                                      "<b>ICB: </b>", input$ICB, "\n",
+                                      "<b>", input$measure, ": </b>", MEASURE_VALUE)))
+             + geom_line(aes(linetype = Org_Name))
+             + scale_color_manual(values = ICBcolors)
+             + scale_y_continuous(expand = c(0, 0)) 
+             + guides(color = guide_legend(title = "ICB"))
+             + labs(x = "Finanical Year", 
+                    y = input$measure,
+                    linetype = "ICB")
+             + theme(plot.margin = margin(t = 10,
+                                          b = 10,
+                                          l = 10,
+                                          r = 10))
+             , tooltip = "text") %>%
+    layout(annotations = list(x = 0, 
+                              y = 1, 
+                              text = paste0("Primary bariatric surgical procedure ", input$measure, "for ICBs ", "\n", "between 2017 and 2022"),
+                              showarrow = F, 
+                              xref='paper', 
+                              yref='paper',
+                              xanchor='left', 
+                              yanchor='bottom', 
+                              xshift=0, 
+                              yshift=0,
+                              font = list(size=14, 
+                                          colour="grey")),
+           hovermode = "x unified",
+           legend = list(font = list(size = 10))) %>%
+    config(toImageButtonOptions = list(filename =paste0('Rate_bariatric_surgery_ICB_2017-2022'), 
+                                       format = "png", 
+                                       width = 1200,
+                                       height = 700),
+           displaylogo = FALSE,
+           modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
+  
     
   })
   
@@ -738,7 +807,7 @@ server <- function(input, output, session){
                                          "(65-74,1)" = "75 and over",
                                          "(Under 18,1)" = "Under 18",
                                          "(black,1" = "England"))
-    + scale_fill_manual(values = mycolors)
+    + scale_fill_manual(values = depcolors)
     + guides(fill = guide_legend(title = paste0(input$demographic, " breakdown")))
     + labs(x = input$demographic, y = "Percent (%)")
     + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
@@ -792,7 +861,7 @@ server <- function(input, output, session){
                           color = "white",
                           position = position_stack(reverse = TRUE))
                + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown")))
-               + scale_fill_manual(values = mycolors)
+               + scale_fill_manual(values = depcolors)
                + coord_flip()
                + theme(axis.title.y = element_blank())
                + labs(y = "Percent (%)")
