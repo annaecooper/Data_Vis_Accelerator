@@ -175,11 +175,14 @@ is.nan.data.frame <- function(x)
 
 graph2_data[is.nan(graph2_data)] <- 0
 
-#ICB graph data
-ICBdata<- subset(data,
-                 MEASURE_NAME %in% c("RATE PER 100,000",
-                                     "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE",
-                                     "PERCENTAGE_TREATED_WITHIN_ICB"))
+# #ICB graph data
+# ICBdata<- subset(data,
+#                  Organisation_breakdown == "Integrated Care Board of Residence" &
+#                    MEASURE_NAME %in% c("RATE PER 100,000",
+#                                      "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE",
+#                                      "PERCENTAGE_TREATED_WITHIN_ICB"))
+
+ICBdata<- st_set_geometry(df_to_plot, NULL)
 
 #Formatting and tidying
 ICBdata$MEASURE_NAME[ICBdata$MEASURE_NAME == 'PRIMARY_BARIATRIC_SURGICAL_PROCEDURE'] <- 'Patient count'
@@ -187,6 +190,7 @@ ICBdata$MEASURE_NAME[ICBdata$MEASURE_NAME == 'RATE PER 100,000'] <- 'Rate per 10
 ICBdata$MEASURE_NAME[ICBdata$MEASURE_NAME == 'PERCENTAGE_TREATED_WITHIN_ICB'] <- 'Percentage of patients treated within ICB'
 
 ICBdata$MEASURE_VALUE <- as.numeric(as.character(ICBdata$MEASURE_VALUE))
+
 
 
 
@@ -222,7 +226,15 @@ ui <- fluidPage(
   
   theme = shinytheme("cerulean"),
   
-  titlePanel("Primary bariatric surgery inequalities dashboard"),
+  titlePanel(div(
+    column(width = 6,
+           h1("Primary bariatric surgery inequalities dashboard")),
+    column(width = 1),
+    column(width = 3,
+           offset = 2,
+           tags$img(src = "NICE_portrait_logo_black.png", height = "120px", width = "150px"))),
+    windowTitle = "NICE Primary bariatric surgery inequalities dashboard"
+  ),
   
   sidebarLayout(
     
@@ -233,7 +245,7 @@ ui <- fluidPage(
       id = "side-panel",
       h3("Breakdowns"),
       
-      p("Please select from the various breakdowns below to filter the graphs, tables and map that appear on the ride hand plane"),
+      p("Please select from the various breakdowns below to filter the graphs, tables and map that appear on the ride hand plane."),
       
       conditionalPanel(condition = "input.conditionedPanelsTab1 == 2",
                        
@@ -251,8 +263,13 @@ ui <- fluidPage(
                                    choices = unique(data$Financial_Year),
                                    selected = "2021-2022"),
                        
+                       # selectInput("measure", label = "Select a measure type:",
+                       #             choices = unique(df_to_plot$MEASURE_NAME),
+                       #             selected = "Rate per 100,000"),
                        selectInput("measure", label = "Select a measure type:",
-                                   choices = unique(df_to_plot$MEASURE_NAME),
+                                   choices = c("Rate per 100,000",
+                                               "Patient count",
+                                               "Percentage of patients treated within ICB"),
                                    selected = "Rate per 100,000"),
                        
                        selectInput("ICB", label = "Select ICB:",
@@ -296,7 +313,7 @@ ui <- fluidPage(
                                 NHS England as part of the National Clinical Audit and Patient Outcomes Programme 
                                 (NCAPOP). See <a href='https://digital.nhs.uk/data-and-information/clinical-audits-and-registries/national-obesity-audit'>National Obesity Audit</a> for more information.</p>
                                 
-                                <p> This dashboard contains ffinal data for 2017-18 to 2020-21 and provisional data for
+                                <p> This dashboard contains final data for 2017-18 to 2020-21 and provisional data for
                                 2021-22 on people receiving bariatric surgical procedures. All data is sourced from 
                                 Hospital Episode Statistics, NHS Digital. Further details on the methodology and data 
                                 quality are on the <a href='https://digital.nhs.uk/data-and-information/publications/statistical/national-obesity-audit/bariatric-surgical-procedures-2021-22-provisional/content'>publication page</a>.
@@ -324,7 +341,9 @@ ui <- fluidPage(
                                    <li> To view the value of a specified visual element, hover over the data on the chart visual,
                                         it will expand the information. </li>
                                    <li> You are able to download all graphs by clicking on the camera icon on the top right hand
-                                        side corner of the graph. </li> </ul> </p>
+                                        side corner of the graph. </li> 
+                                   <li> The data tab contains all of the data used to create this dashboard. </li>
+                                   <li> If the numbers are too small to plot the breakdowns selected an error will appear. </li> </ul> </p>
                                         
                                         <p> <span class = 'bolded'> Please note percentages may sum up to more or less than 100%
                                         due to effects of suppression, especially on small numbers. Users should be aware that 
@@ -334,16 +353,26 @@ ui <- fluidPage(
                                    
                           ),
                           
-                          tabPanel("Bariatric surgical procedures", 
+                          tabPanel("Bariatric procedures", 
                                    value =2,
                                    tags$style(type="text/css",
                                               ".shiny-output-error { visibility: hidden; }",
                                               ".shiny-output-error:before { visibility: hidden; }"
                                    ),
                                    br(),
-                                   br(),
+                                   HTML("<p> This tab shows two graphs on bariatric surgical procedures.</p>
+                                   
+                                        <p> The first graph shows the percentage of people in each selected 
+                                        area having various types of procedures designed for weight management, 
+                                        including primary bariatric surgery, gastric balloons and bubbles and 
+                                        revision procedure between 2017 and 2022. The second graph shows the counts
+                                        for various types of primary bariatric surgical procedures in the same selected
+                                        area between 2017 and 2022.</p>"),
+                                   
                                    span(textOutput("text"), style = "color:red"),
                                    useShinyalert(),
+                                   br(),
+                                   br(),
                                    plotlyOutput("graph1", height = 600),
                                    br(),
                                    br(),
@@ -357,6 +386,12 @@ ui <- fluidPage(
                                               ".shiny-output-error:before { visibility: hidden; }"
                                    ),
                                    br(),
+                                   HTML("<p> This tab displays data on primary bariatic procedures for ICB level. It has
+                                        three different types of measures including rate per 100,000, patient counts, and 
+                                        percentage of patients treated within an ICB. </p>
+                                        
+                                        <p> The line graph will display the chosen measure over time for the selected ICBs. </p>"),
+                                   
                                    textOutput("mapTitle"),
                                    tags$head(tags$style("#mapTitle{font-size: 20px;}")),
                                    # 1. js to get width/height of map div
@@ -382,7 +417,7 @@ ui <- fluidPage(
                                    dataTableOutput("table"),
                                    br(),
                                    br(),
-                                   plotlyOutput("rateGraph", height = 600, width = 1000)),
+                                   plotlyOutput("ICBGraph", height = 600, width = 1000)),
                           
                           tabPanel("Demographic breakdowns for primary bariatric procedures",
                                    value = 4,
@@ -392,13 +427,40 @@ ui <- fluidPage(
                                    ),
                                    useShinyalert(),
                                    br(),
+                                   HTML("<p> This tab displays the data on primary bariatric procedures broken down 
+                                        by various demographic characteristics of interest including gender, age, ethnicity 
+                                        and deprivation. You are also able to choose the area level that you are interested in, 
+                                        as well as year of interest. </p>
+                                        
+                                        <p> The first graph displays the percentage of people within the selected 
+                                        area by demographic breakdown of interest, which is the bar chart. It also has
+                                        a line on the graph which displays England's percentages. This allows for comparison between
+                                        the chosen area against England to see if there are any large differences that appear
+                                        between various demographic groups. </p>
+                                        
+                                        <p> The second graph displays the chosen area against other areas on the same organisational
+                                        level to compare the chosen demographic breakdown against other areas of the same organisational
+                                        level. </p>"),
+                                   
                                    span(textOutput("text1"), style = "color:red"),
                                    plotlyOutput("demographic_distribution", height = 600),
                                    br(),
                                    br(),
                                    plotlyOutput("graph3", 
                                                 height = 1200,
-                                                width = 1200))
+                                                width = 1200)),
+                          
+                          tabPanel("Data",
+                                   value = 5,
+                                   tags$style(type="text/css",
+                                              ".shiny-output-error { visibility: hidden; }",
+                                              ".shiny-output-error:before { visibility: hidden; }"
+                                   ),
+                                   br(),
+                                   HTML("<p> This tab displays the data used to create this dashboard. You are able to filter it to 
+                                        whatever level of interest and download either the full or filtered dataset. </p>"),
+                                   br(),
+                                   dataTableOutput("dataTable"))
               )
               
     )
@@ -428,6 +490,19 @@ server <- function(input, output, session){
   observeEvent(input$reset, {
     shinyjs::reset("side-panel")
     rv$click<- NULL
+  })
+  
+  #Removes side panel for the About and User Guide tab
+  observeEvent(input[["tabsetPanel"]], {
+    if(input[["conditionedPanelsTab1"]][["tabset"]] == "About and User Guide"){
+      hideElement(selector = "#side-panel")
+      removeCssClass("main", "col-sm-8")
+      addCssClass("main", "col-sm-12")
+    } else {
+      showElement(selector = "#side-panel")
+      removeCssClass("main", "col-sm-12")
+      addCssClass("main", "col-sm-8")
+    }
   })
   
   
@@ -463,7 +538,7 @@ server <- function(input, output, session){
         layout(
           annotations = list(x = 0,
                              y = 1,
-                             text = paste0("Number of people having primary bariatric surgical procedures, revision surgical procedures or ", "\n", "gastric balloons & bubbles between 2017 and 2022 in ", input$organisation),
+                             text = paste0("Percentage of people having primary bariatric surgical procedures, revision surgical procedures or ", "\n", "gastric balloons & bubbles between 2017 and 2022 in ", input$organisation),
                              showarrow = F,
                              xref='paper',
                              yref='paper',
@@ -514,7 +589,7 @@ server <- function(input, output, session){
                tooltip = "text") %>%
         layout(annotations = list(x = 0, 
                                   y = 1, 
-                                  text = paste0("Proportion of people who had primary bariatric surgical procedures between 2017 and 2022 by procedure type ", "\n", "in ", input$organisation),
+                                  text = paste0("Count of people who had primary bariatric surgical procedures between 2017 and 2022 by procedure type ", "\n", "in ", input$organisation),
                                   showarrow = F, 
                                   xref='paper', 
                                   yref='paper',
@@ -609,6 +684,8 @@ server <- function(input, output, session){
                    }
     )
     
+    borders<- ifelse(mapFiltered()$Org_Name %in% input$ICB, "red", "grey")
+    
       leaflet(mapFiltered()) %>%
         addTiles() %>%
         setView(lng=1.1743,
@@ -617,7 +694,7 @@ server <- function(input, output, session){
         addPolygons(
           layerId = ~ICB22CD,
           fillColor = ~pal(MEASURE_VALUE),
-          color = "grey",
+          color = ~borders,
           fillOpacity = 0.9,
           label = paste0(
             "<strong> Organisation: </strong> ",
@@ -635,8 +712,10 @@ server <- function(input, output, session){
             bringToFront = TRUE
           )
         ) %>%
-        addControl(tags$div(
-          HTML(paste0("Map displaying the ", input$measure, " of each ICB in ", input$year))), 
+        addControl(
+          tags$div(
+            HTML(paste0("Map displaying the ", input$measure, " of each ICB in ", input$year,
+                        " The area outlined in red is: ", input$ICB[1], input$ICB[2]))),
           position = "bottomleft") %>%
         leaflet::addLegend(
           pal = pal, values = ~MEASURE_VALUE,
@@ -672,24 +751,43 @@ server <- function(input, output, session){
   # create the output file name
   # and specify how the download button will take
   # a screenshot - using the mapview::mapshot() function
-  # and save as a PDF
+  # and save as a png
+  # output$dl <- downloadHandler(
+  #   filename = paste0("Map_ICB_bariatric_surgery_", input$measure, "_", input$year, ".png"), 
+  #   content = function(file) {
+  #     mapshot( x = user.created.map(), 
+  #              file = file, 
+  #              cliprect = "viewport", # the clipping rectangle matches the height & width from the viewing port
+  #              selfcontained = FALSE # when this was not specified, the function for produced a PDF of two pages: one of the leaflet map, the other a blank page.
+  #     )
+  #   } # end of content() function
+  # ) # end of downloadHandler() function
+  
   output$dl <- downloadHandler(
-    filename = paste0("Map_ICB_bariatric_surgery_", input$measure, "_", input$year, ".png")
-    
-    , content = function(file) {
-      mapshot( x = user.created.map()
-               , file = file
-               , cliprect = "viewport" # the clipping rectangle matches the height & width from the viewing port
-               , selfcontained = FALSE # when this was not specified, the function for produced a PDF of two pages: one of the leaflet map, the other a blank page.
+    filename = function(){
+      paste0("Map_ICB_bariatric_surgery_", input$measure, "_", input$year, ".png")
+    }, 
+    content = function(file) {
+      mapshot( x = user.created.map(), 
+               file = file, 
+               cliprect = "viewport", # the clipping rectangle matches the height & width from the viewing port
+               selfcontained = FALSE # when this was not specified, the function for produced a PDF of two pages: one of the leaflet map, the other a blank page.
       )
     } # end of content() function
   ) # end of downloadHandler() function
   
+  #This filters the rv$click to the select input ICB, doesn't really work.
+  # observeEvent(input$ICB,{
+  #   updateSelectInput(session, inputId = "ICB",
+  #                     choices = unique(ICBdata$Org_Name),
+  #                     selected = ICBdata$Org_Name[ICBdata$ICB22CD %in% rv$click[1]])
+  # })
   
-  
-  
+#Filter the datatable 
   datatableFiltered<- reactive({
-    rowsinbreakdown<- which(df_to_plot$Financial_Year == input$year)
+    rowsinbreakdown<- which(df_to_plot$Financial_Year == input$year &
+                              df_to_plot$Org_Name %in% input$ICB
+    )
     df_to_plot[rowsinbreakdown,]
   })
   
@@ -719,7 +817,8 @@ server <- function(input, output, session){
                                "Measure",
                                "Value"),
                   caption = paste0("Table displaying data seen in the map above.", "\n",
-                  " If select area on map it will filter the datatable.", "\n",
+                  " If select an area, or areas, on the left side panel it will show the area(s) in red on the map and filter the data table.", "\n",
+                  " Clicking on an area on the map also filters the data table.", "\n",
                   " Select 'Reset filters' on the left hand side to reset the table")
                   )
     
@@ -729,19 +828,21 @@ server <- function(input, output, session){
   
   output$ICBGraph<- renderPlotly({
     
-    ggplotly(ggplot(ICBdata %>% filter(Org_Name %in% input$ICB & MEASURE_NAME == input$measure),
+    ggplotly(ggplot(ICBdata %>% 
+                      filter(MEASURE_NAME == input$measure) %>% 
+                      filter(Org_Name %in% input$ICB),
                     aes(x = Financial_Year,
                         y = MEASURE_VALUE,
                         group = Org_Name,
-                        color = Org_Name, 
+                        color = Org_Name,
                         text = paste0("<b>Financial Year: </b>", Financial_Year, "\n",
                                       "<b>ICB: </b>", input$ICB, "\n",
                                       "<b>", input$measure, ": </b>", MEASURE_VALUE)))
              + geom_line(aes(linetype = Org_Name))
              + scale_color_manual(values = ICBcolors)
-             + scale_y_continuous(expand = c(0, 0)) 
+             + scale_y_continuous(expand = c(0, 0))
              + guides(color = guide_legend(title = "ICB"))
-             + labs(x = "Finanical Year", 
+             + labs(x = "Finanical Year",
                     y = input$measure,
                     linetype = "ICB")
              + theme(plot.margin = margin(t = 10,
@@ -749,27 +850,26 @@ server <- function(input, output, session){
                                           l = 10,
                                           r = 10))
              , tooltip = "text") %>%
-    layout(annotations = list(x = 0, 
-                              y = 1, 
-                              text = paste0("Primary bariatric surgical procedure ", input$measure, "for ICBs ", "\n", "between 2017 and 2022"),
-                              showarrow = F, 
-                              xref='paper', 
-                              yref='paper',
-                              xanchor='left', 
-                              yanchor='bottom', 
-                              xshift=0, 
-                              yshift=0,
-                              font = list(size=14, 
-                                          colour="grey")),
-           hovermode = "x unified",
-           legend = list(font = list(size = 10))) %>%
-    config(toImageButtonOptions = list(filename =paste0('Rate_bariatric_surgery_ICB_2017-2022'), 
-                                       format = "png", 
-                                       width = 1200,
-                                       height = 700),
-           displaylogo = FALSE,
-           modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
-  
+      layout(annotations = list(x = 0,
+                                y = 1,
+                                text = paste0(input$measure, " for primary bariatric surgical procedure for ICBs ", "\n", "between 2017 and 2022"),
+                                showarrow = F,
+                                xref='paper',
+                                yref='paper',
+                                xanchor='left',
+                                yanchor='bottom',
+                                xshift=0,
+                                yshift=0,
+                                font = list(size=14,
+                                            colour="grey")),
+             hovermode = "x unified",
+             legend = list(font = list(size = 10))) %>%
+      config(toImageButtonOptions = list(filename =paste0(input$measure, "_bariatric_surgery_ICB_2017-2022"),
+                                         format = "png",
+                                         width = 1200,
+                                         height = 700),
+             displaylogo = FALSE,
+             modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
     
   })
   
@@ -829,6 +929,7 @@ server <- function(input, output, session){
            displaylogo = FALSE,
            modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
     
+    #Get rid of () that appear on legend when plotting ggplotly!
     for (i in 1:length(myplot$x$data)){
       if (!is.null(myplot$x$data[[i]]$name)){
         myplot$x$data[[i]]$name =  gsub("\\(","",str_split(myplot$x$data[[i]]$name,",")[[1]][1])
@@ -933,7 +1034,19 @@ server <- function(input, output, session){
       
     }})
   
+  output$dataTable<- renderDT({
+    
+    DT::datatable(data,
+                  rownames = FALSE,
+                  extensions = c("Buttons"),
+                  options = list(dom = 'Bfrtip',
+                                 buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+                  caption = paste0("This is the data used to create this dashboard. 
+                                   Use the buttons to download the full dataset."))
+      })
+  
   }
+
 
 
 
