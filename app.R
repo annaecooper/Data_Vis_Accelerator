@@ -274,7 +274,6 @@ ui <- fluidPage(
                        
                        selectInput("ICB", label = "Select ICB:",
                                    choices = unique(ICBdata$Org_Name),
-                                   #selected = "BATH AND NORTH EAST SOMERSET, SWINDON AND WILTSHIRE ICB",
                                    selected = NULL,
                                    multiple = TRUE)),
       
@@ -493,12 +492,11 @@ server <- function(input, output, session){
   })
   
   #Removes side panel for the About and User Guide tab
-  observeEvent(input[["tabsetPanel"]], {
-    if(input[["conditionedPanelsTab1"]][["tabset"]] == "About and User Guide"){
-      hideElement(selector = "#side-panel")
+  observeEvent(input[["tabset"]], {
+    if(input[["tabset"]] == "About and User Guide"){
       removeCssClass("main", "col-sm-8")
       addCssClass("main", "col-sm-12")
-    } else {
+    }else{
       showElement(selector = "#side-panel")
       removeCssClass("main", "col-sm-12")
       addCssClass("main", "col-sm-8")
@@ -1034,15 +1032,26 @@ server <- function(input, output, session){
       
     }})
   
-  output$dataTable<- renderDT({
+  output$dataTable<- DT::renderDT(server = FALSE, {
     
     DT::datatable(data,
+                  filter = "top",
                   rownames = FALSE,
                   extensions = c("Buttons"),
                   options = list(dom = 'Bfrtip',
-                                 buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
-                  caption = paste0("This is the data used to create this dashboard. 
-                                   Use the buttons to download the full dataset."))
+                                 buttons = list(
+                                   list(extend = "csv", 
+                                        text = "Download Current Page",
+                                        filename = "page",
+                                        exportOptions = list(
+                                          modifier = list(page = "current")
+                                        )),
+                                   list(extend = "csv",
+                                        text = "Download Full Results",
+                                        filename = "data",
+                                        exportOptions = list(
+                                          modifier = list(page = "all")
+                                        )))))
       })
   
   }
