@@ -34,14 +34,19 @@ pacman::p_load(ggplot2,
                )
 
 
-#Load in the data
+#Load in the data from Git
 #Geographical data
-ICB<- sf::st_read("U:/Data Vis/Data/Geography/Simplify_geography.geojson", 
-                  as_tibble = TRUE)
+# ICB<- sf::st_read("U:/Data Vis/Data/Geography/Simplify_geography.geojson", 
+#                   as_tibble = TRUE)
+ICB<- sf::st_read("Data/Simplify_geography.geojson", as_tibble = TRUE)
 
-#HES data
-data<- read.csv("U:/Data Vis/Data/Bariatric_surgery/NHSD_bariatric surgery_v0.1.csv", check.names = FALSE,
+#NHSD data
+# data<- read.csv("U:/Data Vis/Data/Bariatric_surgery/NHSD_bariatric surgery_v0.1.csv", check.names = FALSE,
+#                 fileEncoding = "UTF-8")
+data<- read.csv("Data/NHSD_bariatric surgery_v0.1.csv",
+                check.names = FALSE,
                 fileEncoding = "UTF-8")
+
 
 #Get rid of provider organisation code breakdown, not useful
 data<- subset(data,
