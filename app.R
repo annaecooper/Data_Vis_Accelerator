@@ -33,7 +33,6 @@ pacman::p_load(ggplot2,
                textclean
                )
 
-#thematic_shiny()
 
 #Load in the data
 #Geographical data
@@ -293,7 +292,7 @@ ui <- fluidPage(
                        
                        selectInput("demographic", label = "Select Demographic:",
                                    choices = unique(demographic_graph$MEASURE_NAME),
-                                   selected = "Age")),
+                                   selected = "Gender")),
       
       actionButton("reset", label = "Reset filters")
       
@@ -713,7 +712,8 @@ server <- function(input, output, session){
         addControl(
           tags$div(
             HTML(paste0("Map displaying the ", input$measure, " of each ICB in ", input$year,
-                        " The area outlined in red is: ", input$ICB[1], input$ICB[2]))),
+                        " The area outlined in red is: ")),
+            HTML(input$ICB)),
           position = "bottomleft") %>%
         leaflet::addLegend(
           pal = pal, values = ~MEASURE_VALUE,
@@ -789,22 +789,23 @@ server <- function(input, output, session){
     df_to_plot[rowsinbreakdown,]
   })
   
-  datatable<- reactive({
-    if(!is.null(rv$click)){
-      
-      st_set_geometry(datatableFiltered(), NULL) %>% 
-        filter(ICB22CD == rv$click[1])
-      
-    } else {
-      st_set_geometry(datatableFiltered(), NULL)
-    }
-    
-  })
+  # datatable<- reactive({
+  #   if(!is.null(rv$click)){
+  #     
+  #     st_set_geometry(datatableFiltered(), NULL) %>% 
+  #       filter(ICB22CD == rv$click[1])
+  #     
+  #   } else {
+  #     st_set_geometry(datatableFiltered(), NULL)
+  #   }
+  #   
+  # })
   
   
   output$table<- renderDataTable({
     
-    DT::datatable(datatable(),
+    DT::datatable(#datatable(),
+      st_set_geometry(datatableFiltered(), NULL),
                   rownames = FALSE,
                   # extensions = c("Buttons"),
                   # options = list(dom = 'Bfrtip',
@@ -905,7 +906,9 @@ server <- function(input, output, session){
                                          "(65-74,1)" = "75 and over",
                                          "(Under 18,1)" = "Under 18",
                                          "(black,1" = "England"))
-    + scale_fill_manual(values = depcolors)
+    #+ scale_fill_manual(values = depcolors)
+    + scale_fill_manual(values = c('Female' = "#89CFF0",
+                                   'Male' == "#0047AB"))
     + guides(fill = guide_legend(title = paste0(input$demographic, " breakdown")))
     + labs(x = input$demographic, y = "Percent (%)")
     + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
