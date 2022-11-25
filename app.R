@@ -883,8 +883,38 @@ server <- function(input, output, session){
     
     if(input$organisation1 %notin% CCG_small){
     
-    myplot<- ggplotly(ggplot(NULL, aes(x = CURRENCY, 
-                              y = Percent)) 
+    myplot<- ggplotly(ggplot(NULL, 
+                             aes(#x = CURRENCY,
+                               x = factor(CURRENCY,
+                                          levels = c("Least deprived 10%",
+                                                     "Less deprived 10-20%",
+                                                     "Less deprived 20-30%",
+                                                     "Less deprived 30-40%",
+                                                     "Less deprived 40-50%",
+                                                     "More deprived 40-50%",
+                                                     "More deprived 30-40%",
+                                                     "More deprived 20-30%",
+                                                     "More deprived 10-20%",
+                                                     "Most deprived 10%",
+                                                     "Unknown",
+                                                     "Under 18",
+                                                     "18-24",
+                                                     "25-34",
+                                                     "35-44",
+                                                     "45-54",
+                                                     "55-64",
+                                                     "65-74",
+                                                     "75 and over",
+                                                     "Not known",
+                                                     "Black or Black British",
+                                                     "Mixed",
+                                                     "Other Ethnic Groups",
+                                                     "White",
+                                                     "Not Known or Not Stated",
+                                                     "Female",
+                                                     "Male",
+                                                     "Not specified or not known")),
+                                 y = Percent)) 
     + geom_bar(data = subset(demographic_graph,
                              Organisation_breakdown == input$organisation_type1 &
                                Org_Name ==  input$organisation1 &
@@ -912,8 +942,35 @@ server <- function(input, output, session){
                                          "(Under 18,1)" = "Under 18",
                                          "(black,1" = "England"))
     #+ scale_fill_manual(values = depcolors)
-    + scale_fill_manual(values = c('Female' = "#89CFF0",
-                                   'Male' == "#0047AB"))
+    + scale_fill_manual(values = c('Female' = "#B5D4E9",
+                                   'Male' = "#2E7EBB",
+                                   '18-24' = "#B5D4E9",
+                                   '25-34' = "#93C4DE",
+                                   '35-44' = "#6BAED6",
+                                   '45-54' = "#4A97C9",
+                                   '55-64' = "#1664AB",
+                                   '65-74' = "#084A92",
+                                   '75 and over' = "#08306B",
+                                   'Under 18' = "#E3EEF8",
+                                   "Asian or Asian British" = "#CFE1F2",
+                                   "Black or Black British" = "#93C4DE",
+                                   "Mixed" = "#1664AB",
+                                   "Other Ethnic Groups" = "#084A92",
+                                   "White" = "#08306B",
+                                   "Least deprived 10%" = "#F7FBFF",
+                                   "Less deprived 10-20%" = "#E3EEF8",
+                                   "Less deprived 20-30%" = "#CFE1F2",
+                                   "Less deprived 30-40%" = "#B5D4E9",
+                                   "Less deprived 40-50%" = "#93C4DE",
+                                   "More deprived 40-50%" = "#6BAED6",
+                                   "More deprived 30-40%" = "#4A97C9",
+                                   "More deprived 20-30%" = "#2E7EBB",
+                                   "More deprived 10-20%" = "#1664AB",
+                                   "Most deprived 10%" = "#08306B",
+                                   "Unknown" = "#808080",
+                                   "Not known" = "#808080",
+                                   "Not Known or Not Stated" = "#808080",
+                                   "Not specified or not known" = "#808080"))
     + guides(fill = guide_legend(title = paste0(input$demographic, " breakdown")))
     + labs(x = input$demographic, y = "Percent (%)")
     + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
@@ -960,7 +1017,36 @@ server <- function(input, output, session){
                                           Org_Name %notin% CCG_small &
                                           Financial_Year == input$year1 &
                                           MEASURE_NAME == input$demographic),
-                          aes(fill = CURRENCY,
+                          aes(#fill = CURRENCY,
+                            fill = factor(CURRENCY,
+                                       levels = c("Least deprived 10%",
+                                                  "Less deprived 10-20%",
+                                                  "Less deprived 20-30%",
+                                                  "Less deprived 30-40%",
+                                                  "Less deprived 40-50%",
+                                                  "More deprived 40-50%",
+                                                  "More deprived 30-40%",
+                                                  "More deprived 20-30%",
+                                                  "More deprived 10-20%",
+                                                  "Most deprived 10%",
+                                                  "Unknown",
+                                                  "Under 18",
+                                                  "18-24",
+                                                  "25-34",
+                                                  "35-44",
+                                                  "45-54",
+                                                  "55-64",
+                                                  "65-74",
+                                                  "75 and over",
+                                                  "Not known",
+                                                  "Black or Black British",
+                                                  "Mixed",
+                                                  "Other Ethnic Groups",
+                                                  "White",
+                                                  "Not Known or Not Stated",
+                                                  "Female",
+                                                  "Male",
+                                                  "Not specified or not known")),
                               text = paste0("Organisation: ", Org_Name, "\n",
                                             "Demographic attribute: ", CURRENCY, "\n",
                                             "Percent: ", Percent, "%")),
@@ -968,24 +1054,54 @@ server <- function(input, output, session){
                           color = "white",
                           position = position_stack(reverse = TRUE))
                + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown")))
-               + scale_fill_manual(values = depcolors)
+               + scale_fill_manual(values = c('Female' = "#B5D4E9",
+                                                       'Male' = "#2E7EBB",
+                                                       '18-24' = "#B5D4E9",
+                                                       '25-34' = "#93C4DE",
+                                                       '35-44' = "#6BAED6",
+                                                       '45-54' = "#4A97C9",
+                                                       '55-64' = "#1664AB",
+                                                       '65-74' = "#084A92",
+                                                       '75 and over' = "#08306B",
+                                                       'Under 18' = "#E3EEF8",
+                                                       "Asian or Asian British" = "#CFE1F2",
+                                                       "Black or Black British" = "#93C4DE",
+                                                       "Mixed" = "#1664AB",
+                                                       "Other Ethnic Groups" = "#084A92",
+                                                       "White" = "#08306B",
+                                                       "Least deprived 10%" = "#F7FBFF",
+                                                       "Less deprived 10-20%" = "#E3EEF8",
+                                                       "Less deprived 20-30%" = "#CFE1F2",
+                                                       "Less deprived 30-40%" = "#B5D4E9",
+                                                       "Less deprived 40-50%" = "#93C4DE",
+                                                       "More deprived 40-50%" = "#6BAED6",
+                                                       "More deprived 30-40%" = "#4A97C9",
+                                                       "More deprived 20-30%" = "#2E7EBB",
+                                                       "More deprived 10-20%" = "#1664AB",
+                                                       "Most deprived 10%" = "#08306B",
+                                                       "Unknown" = "#808080",
+                                                       "Not known" = "#808080",
+                                                       "Not Known or Not Stated" = "#808080",
+                                                       "Not specified or not known" = "#808080"))
                + coord_flip()
                + theme(axis.title.y = element_blank())
                + labs(y = "Percent (%)")
-        + geom_bar(data = subset(demographic_graph,
-                                 Organisation_breakdown == input$organisation_type1 &
-                                   Org_Name == input$organisation1 &
-                                   Org_Name %notin% CCG_small &
-                                   Financial_Year == input$year1 &
-                                   MEASURE_NAME == input$demographic),
-                   aes(input$organisation1,
-                       text = paste0("Organisation: ", Org_Name, "\n",
-                                     "Demographic attribute: ", CURRENCY, "\n",
-                                     "Percent: ", Percent, "%")),
-                   alpha = 0,
+        + geom_bar(data = demographic_graph %>%
+                     filter(Organisation_breakdown == input$organisation_type1 &
+                              Org_Name == input$organisation1 &
+                              Org_Name %notin% CCG_small &
+                              Financial_Year == input$year1 &
+                              MEASURE_NAME == input$demographic) %>%
+                     group_by(Organisation_breakdown,
+                              Org_Name,
+                              Financial_Year) %>%
+                     summarise(Percent = sum(Percent)),
+                   aes(x = Org_Name,
+                       y = Percent),
                    size = 0.5,
                    color = "black",
                    stat = "identity",
+                   fill = "transparent",
                    position = position_stack(reverse = TRUE))
         + theme(plot.margin = margin(t = 10,
                                      b = 10))
