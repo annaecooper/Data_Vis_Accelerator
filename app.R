@@ -933,7 +933,8 @@ server <- function(input, output, session){
                     color = "England",
                     text = paste0("Organisation: England", "\n",
                                    "Demographic attribute: ", CURRENCY, "\n",
-                                   "Percent: ", Percent, "%")))
+                                   "Percent: ", Percent, "%")),
+                color = "red")
     + scale_colour_manual("", values = c("(18-24,1)" = "18-24",
                                          "(25-34,1)" = "25-34",
                                          "(35-44,1)" = "35-44",
@@ -1098,7 +1099,7 @@ server <- function(input, output, session){
                      summarise(Percent = sum(Percent)),
                    aes(x = Org_Name,
                        y = Percent),
-                   size = 0.5,
+                   size = 1.3,
                    color = "black",
                    stat = "identity",
                    fill = "transparent",
