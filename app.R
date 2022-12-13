@@ -725,7 +725,7 @@ server <- function(input, output, session){
       addControl(
         tags$div(
           HTML(paste0("Map displaying the ", input$measure, " of each ICB in ", input$year,
-                      " The area outlined in red is: ")),
+                      ".", "\n", "The area outlined in red is: ")),
           HTML(input$ICB)),
         position = "bottomleft") %>%
       leaflet::addLegend(
@@ -1003,7 +1003,7 @@ server <- function(input, output, session){
                         tooltip = "text") %>%
         layout(annotations = list(x = 0,
                                   y = 1,
-                                  text = paste0("Graph displaying the ", tolower(input$demographic), " distribution for ", input$organisation1, " in ", input$year1),
+                                  text = paste0("Graph displaying the ", tolower(input$demographic), " distribution of patients having a primary bariatric procedure in ", "\n", input$organisation1, " in ", input$year1),
                                   showarrow = F, 
                                   xref='paper', 
                                   yref='paper',
@@ -1141,7 +1141,7 @@ server <- function(input, output, session){
                tooltip = "text") %>%
         layout(annotations = list(x = 0,
                                   y = 1,
-                                  text = paste0("Proportion of ", tolower(input$demographic), " breakdown by each ", "\n", input$organisation_type1, " in ", input$year1),
+                                  text = paste0("Proportion of patients having a primary bariatric procedure by ", tolower(input$demographic), " - ", "\n", input$organisation_type1, " in ", input$year1),
                                   showarrow = F,
                                   xref='paper',
                                   yref='paper',
