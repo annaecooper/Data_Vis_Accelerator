@@ -6,7 +6,6 @@ pacman::p_load(ggplot2,
                tidyr, 
                DT, 
                knitr, 
-               lubridate, 
                stringr, 
                here, 
                summarytools, 
@@ -24,14 +23,13 @@ pacman::p_load(ggplot2,
                shinyjs,
                RColorBrewer,
                shinythemes,
-               thematic,
                shades,
                shinyalert,
                mapview,
                mapshot,
                phantomjs,
                textclean
-               )
+)
 
 
 #Load in the data from Git
@@ -64,9 +62,9 @@ data$MEASURE_NAME<- case_when(
   data$MEASURE_NAME == "DEMOGRAPHIC_AGE" ~ "Age",
   data$MEASURE_NAME == "DEMOGRAPHIC_ETHNICITY" ~ "Ethnicity",
   data$MEASURE_NAME == "DEMOGRAPHIC_GENDER" ~ "Gender",
-#  data$MEASURE_NAME == "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE" ~ "Patient count",
-#  data$MEASURE_NAME == "RATE PER 100,000" ~ "Rate per 100,000",
-#  data$MEASURE_NAME == "PERCENTAGE_TREATED_WITHIN_ICB " ~ "Percentage of patients treated within ICB",
+  #  data$MEASURE_NAME == "PRIMARY_BARIATRIC_SURGICAL_PROCEDURE" ~ "Patient count",
+  #  data$MEASURE_NAME == "RATE PER 100,000" ~ "Rate per 100,000",
+  #  data$MEASURE_NAME == "PERCENTAGE_TREATED_WITHIN_ICB " ~ "Percentage of patients treated within ICB",
   TRUE ~ data$MEASURE_NAME
 )
 
@@ -131,8 +129,8 @@ df_to_plot$MEASURE_VALUE <- as.numeric(as.character(df_to_plot$MEASURE_VALUE))
 
 #Tidy up the names of organisations
 data$Org_Name<- trimws(textclean::mgsub(data$Org_Name,
-                      c("NHS", "INTEGRATED CARE BOARD", "COMMISSIONING REGION"),
-                      c("", "ICB", "")))
+                                        c("NHS", "INTEGRATED CARE BOARD", "COMMISSIONING REGION"),
+                                        c("", "ICB", "")))
 
 df_to_plot$Org_Name<- trimws(textclean::mgsub(df_to_plot$Org_Name,
                                               c("NHS", "INTEGRATED CARE BOARD", "COMMISSIONING REGION"),
@@ -236,7 +234,8 @@ ui <- fluidPage(
     column(width = 1),
     column(width = 3,
            offset = 2,
-           tags$img(src = "NICE_portrait_logo_black.png", height = "120px", width = "150px"))),
+           tags$img(src = "NICE_portrait_logo_black.png", height = "120px", width = "150px")),
+    column(width = 12)),
     windowTitle = "NICE Primary bariatric surgery inequalities dashboard"
   ),
   
@@ -318,11 +317,11 @@ ui <- fluidPage(
                                 
                                 <p> This dashboard contains final data for 2017-18 to 2020-21 and provisional data for
                                 2021-22 on people receiving bariatric surgical procedures. All data is sourced from 
-                                Hospital Episode Statistics, NHS Digital. Further details on the methodology and data 
-                                quality are on the <a href='https://digital.nhs.uk/data-and-information/publications/statistical/national-obesity-audit/bariatric-surgical-procedures-2021-22-provisional/content'>publication page</a>.
+                                Hospital Episode Statistics, NHS Digital. Further details on the methodology, codes used 
+                                for defining bariatric surgery and data quality are on the <a href='https://digital.nhs.uk/data-and-information/publications/statistical/national-obesity-audit/bariatric-surgical-procedures-2021-22-provisional/content'>publication page</a>.
                                 As the methodology used to derive these figures has been newly developed with clinical
                                 input, these numbers should be viewed as developmental until NHS Digital further refine
-                                the methdology with users and stakeholders.</p>
+                                the methdology with users and stakeholders. </p>
                                 
                                 <p> Note: Data for 2017-18 to 2020-21 are presented at National, NHS England Region, Integrated
                                 Care Board (ICB) and Clinical Commissioning Group (CCG). For trend purposes CCGs have been mapped 
@@ -330,12 +329,12 @@ ui <- fluidPage(
                                 were established within <a href='https://www.england.nhs.uk/integratedcare/integrated-care-in-your-area/'>Integrated Care Systems</a>
                                 and replaced Sustanability and Transformation Plans (STPs). Data is also presented by ICB 
                                 (rather than STP), whereby CCG data has been mapped to the ICBs in place post 1st of July 2022, 
-                                which relfects latest boundary changes.</p>
-                                "),
+                                which reflects latest boundary changes.</p>"),
+                                   
                                    tags$h3("User Guide"),
                                    tags$h5("Instructions:"),
                                    HTML("<p> <ul>
-                                   <li> Use the left hand side panel to filter the graphs, tables or map that appear to
+                                   <li> Use the left hand side panel to filter the graphs, tables or map to
                                    what you are interested in viewing. </li>
                                    <li> When using the filters it is best to use them from top to bottom, starting with the
                                         organisational level desired. </li>
@@ -391,7 +390,10 @@ ui <- fluidPage(
                                    br(),
                                    HTML("<p> This tab displays data on primary bariatic procedures for ICB level. It has
                                         three different types of measures including rate per 100,000, patient counts, and 
-                                        percentage of patients treated within an ICB. </p>
+                                        percentage of patients treated within an ICB. Percentage of patients treated within ICB
+                                        is defined as the percentage of patients treated within their ICB of residence.
+                                        This is to show that some ICBs might not undertake primary bariatric surgery resulting in 
+                                        some patients having treatment outside of their ICB.</p>
                                         
                                         <p> The line graph will display the chosen measure over time for the selected ICBs. </p>"),
                                    
@@ -449,9 +451,11 @@ ui <- fluidPage(
                                    plotlyOutput("demographic_distribution", height = 600),
                                    br(),
                                    br(),
-                                   plotlyOutput("graph3", 
-                                                height = 1200,
-                                                width = 1200)),
+                                   plotlyOutput("graph3"
+                                                # , 
+                                                # height = 1200,
+                                                # width = 1200
+                                   )),
                           
                           tabPanel("Data",
                                    value = 5,
@@ -522,8 +526,8 @@ server <- function(input, output, session){
                                                    "Revision procedure",
                                                    "Primary bariatric surgical procedure")),
                           text = paste0(#"<b>Organisation: </b>", input$organisation, "\n",
-                                        "<b>Procedure type: </b>", MEASURE_NAME, "\n",
-                                        "<b>Percent: </b>", Percent, "%"))) 
+                            "<b>Procedure type: </b>", MEASURE_NAME, "\n",
+                            "<b>Percent: </b>", Percent, "%"))) 
                + geom_bar(stat = "identity", 
                           position = "stack") 
                + scale_fill_manual(values = c("#89CFF0",
@@ -531,10 +535,12 @@ server <- function(input, output, session){
                                               "#00008B"))
                #+ shades::lightness(scale_fill_brewer(palette = "Blues"), scalefac(0.9)) 
                + guides(fill=guide_legend(title="Procedure type")) 
-               + labs(x = "Finanical Year", 
+               + labs(x = "Financial Year", 
                       y = "Percent (%)")
-               + theme(plot.margin = margin(t = 10,
-                                            b = 10))
+               + theme(plot.margin = margin(t = 20,
+                                            b = 10,
+                                            l = 10,
+                                            r = 10))
                + scale_y_continuous(expand = c(0, 0)), 
                tooltip = "text") %>%
         layout(
@@ -574,8 +580,8 @@ server <- function(input, output, session){
                           group = CURRENCY,
                           color = CURRENCY,
                           text = paste0(#"<b>Organisation: </b>", input$organisation, "\n", 
-                                        "<b>Procedure type: </b>", CURRENCY, "\n", 
-                                        "<b>Count: </b>", MEASURE_VALUE))) 
+                            "<b>Procedure type: </b>", CURRENCY, "\n", 
+                            "<b>Count: </b>", MEASURE_VALUE))) 
                + geom_line(stat = "identity") 
                + scale_color_manual("Procedure type", 
                                     values = c("#BCD2E8", 
@@ -584,10 +590,12 @@ server <- function(input, output, session){
                                                "#0836C1", 
                                                "#08204F")) 
                + scale_y_continuous(expand = c(0, 0)) 
-               + labs(x = "Finanical Year", 
+               + labs(x = "Financial Year", 
                       y = "Count")
-               + theme(plot.margin = margin(t = 10,
-                                            b = 10)),  
+               + theme(plot.margin = margin(t = 20,
+                                            b = 10,
+                                            l = 10,
+                                            r = 10)),  
                tooltip = "text") %>%
         layout(annotations = list(x = 0, 
                                   y = 1, 
@@ -613,7 +621,7 @@ server <- function(input, output, session){
     
   })
   
-#Error message pop up for CCGs that are too small
+  #Error message pop up for CCGs that are too small
   observeEvent(input$organisation, {
     if(input$organisation %in% CCG_small){
       shinyalert(
@@ -663,7 +671,7 @@ server <- function(input, output, session){
   
   
   #Map output
-
+  
   # Create foundational leaflet map
   # and store it as a reactive expression
   foundational.map <- reactive({
@@ -688,42 +696,42 @@ server <- function(input, output, session){
     
     borders<- ifelse(mapFiltered()$Org_Name %in% input$ICB, "red", "grey")
     
-      leaflet(mapFiltered()) %>%
-        addTiles() %>%
-        setView(lng=1.1743,
-                lat=52.3555,
-                zoom=6) %>%
-        addPolygons(
-          layerId = ~ICB22CD,
-          fillColor = ~pal(MEASURE_VALUE),
-          color = ~borders,
-          fillOpacity = 0.9,
-          label = paste0(
-            "<strong> Organisation: </strong> ",
-            mapFiltered()$Org_Name, "<br/> ",
-            "<strong> Year: </strong> ",
-            input$year, "<br/> ",
-            "<strong> Measure: </strong> ",
-            input$measure, "<br/> ",
-            "<strong> Value: </strong> ",
-            mapFiltered()$MEASURE_VALUE) %>%
-            lapply(htmltools::HTML),
-
-          highlight = highlightOptions(
-            color = "blue",
-            bringToFront = TRUE
-          )
-        ) %>%
-        addControl(
-          tags$div(
-            HTML(paste0("Map displaying the ", input$measure, " of each ICB in ", input$year,
-                        " The area outlined in red is: ")),
-            HTML(input$ICB)),
-          position = "bottomleft") %>%
-        leaflet::addLegend(
-          pal = pal, values = ~MEASURE_VALUE,
-          opacity = 1, title = input$measure
+    leaflet(mapFiltered()) %>%
+      addTiles() %>%
+      setView(lng=1.1743,
+              lat=52.3555,
+              zoom=6) %>%
+      addPolygons(
+        layerId = ~ICB22CD,
+        fillColor = ~pal(MEASURE_VALUE),
+        color = ~borders,
+        fillOpacity = 0.9,
+        label = paste0(
+          "<strong> Organisation: </strong> ",
+          mapFiltered()$Org_Name, "<br/> ",
+          "<strong> Year: </strong> ",
+          input$year, "<br/> ",
+          "<strong> Measure: </strong> ",
+          input$measure, "<br/> ",
+          "<strong> Value: </strong> ",
+          mapFiltered()$MEASURE_VALUE) %>%
+          lapply(htmltools::HTML),
+        
+        highlight = highlightOptions(
+          color = "blue",
+          bringToFront = TRUE
         )
+      ) %>%
+      addControl(
+        tags$div(
+          HTML(paste0("Map displaying the ", input$measure, " of each ICB in ", input$year,
+                      " The area outlined in red is: ")),
+          HTML(input$ICB)),
+        position = "bottomleft") %>%
+      leaflet::addLegend(
+        pal = pal, values = ~MEASURE_VALUE,
+        opacity = 1, title = input$measure
+      )
     
   }) # end of foundational.map()
   
@@ -786,13 +794,20 @@ server <- function(input, output, session){
   #                     selected = ICBdata$Org_Name[ICBdata$ICB22CD %in% rv$click[1]])
   # })
   
-#Filter the datatable 
+  #Filter the datatable 
   datatableFiltered<- reactive({
-    rowsinbreakdown<- which(df_to_plot$Financial_Year == input$year &
-                              df_to_plot$Org_Name %in% input$ICB
-    )
+    df_to_plot<- st_set_geometry(df_to_plot, NULL)
+    
+    rowsinbreakdown<- if(is.null(input$ICB)){
+      which(df_to_plot$Financial_Year == input$year)
+    } else {
+      which(df_to_plot$Financial_Year == input$year 
+            & df_to_plot$Org_Name %in% input$ICB)
+    }
+    
     df_to_plot[rowsinbreakdown,]
   })
+  
   
   # datatable<- reactive({
   #   if(!is.null(rv$click)){
@@ -809,24 +824,23 @@ server <- function(input, output, session){
   
   output$table<- renderDataTable({
     
-    DT::datatable(#datatable(),
-      st_set_geometry(datatableFiltered(), NULL),
-                  rownames = FALSE,
-                  # extensions = c("Buttons"),
-                  # options = list(dom = 'Bfrtip',
-                  #                buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
-                  colnames = c("Financial year",
-                               "ICB Code",
-                               "NHS Integrated Care Board name",
-                               "Measure",
-                               "Value"),
-                  caption = paste0("Table displaying data seen in the map above.", "\n",
-                  " If select an area, or areas, on the left side panel it will show the area(s) in red on the map and filter the data table.", "\n",
-                  " Clicking on an area on the map also filters the data table.", "\n",
-                  " Select 'Reset filters' on the left hand side to reset the table")
-                  )
+    DT::datatable(
+      datatableFiltered(),
+      rownames = FALSE,
+      # extensions = c("Buttons"),
+      # options = list(dom = 'Bfrtip',
+      #                buttons = c('copy', 'csv', 'excel', 'pdf', 'print')),
+      colnames = c("Financial year",
+                   "ICB Code",
+                   "NHS Integrated Care Board name",
+                   "Measure",
+                   "Value"),
+      caption = paste0("Table displaying data seen in the map above.", "\n",
+                       " If select an area, or areas, on the left side panel it will show the area(s) in red on the map and filter the data table.", "\n",
+                       " Select 'Reset filters' on the left hand side to reset the table.")
+    )
     
-
+    
     
   })
   
@@ -846,10 +860,10 @@ server <- function(input, output, session){
              + scale_color_manual(values = ICBcolors)
              + scale_y_continuous(expand = c(0, 0))
              + guides(color = guide_legend(title = "ICB"))
-             + labs(x = "Finanical Year",
+             + labs(x = "Financial Year",
                     y = input$measure,
                     linetype = "ICB")
-             + theme(plot.margin = margin(t = 10,
+             + theme(plot.margin = margin(t = 20,
                                           b = 10,
                                           l = 10,
                                           r = 10))
@@ -877,185 +891,70 @@ server <- function(input, output, session){
     
   })
   
- 
+  
   #Graph 4 - demographic distribution
   output$demographic_distribution<- renderPlotly({
     
     if(input$organisation1 %notin% CCG_small){
-    
-    myplot<- ggplotly(ggplot(NULL, 
-                             aes(#x = CURRENCY,
-                               x = factor(CURRENCY,
-                                          levels = c("Least deprived 10%",
-                                                     "Less deprived 10-20%",
-                                                     "Less deprived 20-30%",
-                                                     "Less deprived 30-40%",
-                                                     "Less deprived 40-50%",
-                                                     "More deprived 40-50%",
-                                                     "More deprived 30-40%",
-                                                     "More deprived 20-30%",
-                                                     "More deprived 10-20%",
-                                                     "Most deprived 10%",
-                                                     "Unknown",
-                                                     "Under 18",
-                                                     "18-24",
-                                                     "25-34",
-                                                     "35-44",
-                                                     "45-54",
-                                                     "55-64",
-                                                     "65-74",
-                                                     "75 and over",
-                                                     "Not known",
-                                                     "Black or Black British",
-                                                     "Mixed",
-                                                     "Other Ethnic Groups",
-                                                     "White",
-                                                     "Not Known or Not Stated",
-                                                     "Female",
-                                                     "Male",
-                                                     "Not specified or not known")),
-                                 y = Percent)) 
-    + geom_bar(data = subset(demographic_graph,
-                             Organisation_breakdown == input$organisation_type1 &
-                               Org_Name ==  input$organisation1 &
-                               Financial_Year == input$year1 &
-                               MEASURE_NAME == input$demographic),
-               aes(fill = CURRENCY,
-                   text = paste0("Organisation: ", input$organisation1, "\n",
-                                 "Demographic attribute: ", CURRENCY, "\n",
-                                 "Percent: ", Percent, "%")),
-               stat = "identity") 
-    + geom_line(data = subset(demographic_graph,
-                              Org_Name == "England" &
-                                Financial_Year == input$year1 &
-                                MEASURE_NAME == input$demographic),
-                aes(group = 1,
-                    color = "England",
-                    text = paste0("Organisation: England", "\n",
-                                   "Demographic attribute: ", CURRENCY, "\n",
-                                   "Percent: ", Percent, "%")),
-                color = "red")
-    + scale_colour_manual("", values = c("(18-24,1)" = "18-24",
-                                         "(25-34,1)" = "25-34",
-                                         "(35-44,1)" = "35-44",
-                                         "(55-64,1)" = "55-64",
-                                         "(65-74,1)" = "75 and over",
-                                         "(Under 18,1)" = "Under 18",
-                                         "(black,1" = "England"))
-    #+ scale_fill_manual(values = depcolors)
-    + scale_fill_manual(values = c('Female' = "#B5D4E9",
-                                   'Male' = "#2E7EBB",
-                                   '18-24' = "#B5D4E9",
-                                   '25-34' = "#93C4DE",
-                                   '35-44' = "#6BAED6",
-                                   '45-54' = "#4A97C9",
-                                   '55-64' = "#1664AB",
-                                   '65-74' = "#084A92",
-                                   '75 and over' = "#08306B",
-                                   'Under 18' = "#E3EEF8",
-                                   "Asian or Asian British" = "#CFE1F2",
-                                   "Black or Black British" = "#93C4DE",
-                                   "Mixed" = "#1664AB",
-                                   "Other Ethnic Groups" = "#084A92",
-                                   "White" = "#08306B",
-                                   "Least deprived 10%" = "#F7FBFF",
-                                   "Less deprived 10-20%" = "#E3EEF8",
-                                   "Less deprived 20-30%" = "#CFE1F2",
-                                   "Less deprived 30-40%" = "#B5D4E9",
-                                   "Less deprived 40-50%" = "#93C4DE",
-                                   "More deprived 40-50%" = "#6BAED6",
-                                   "More deprived 30-40%" = "#4A97C9",
-                                   "More deprived 20-30%" = "#2E7EBB",
-                                   "More deprived 10-20%" = "#1664AB",
-                                   "Most deprived 10%" = "#08306B",
-                                   "Unknown" = "#808080",
-                                   "Not known" = "#808080",
-                                   "Not Known or Not Stated" = "#808080",
-                                   "Not specified or not known" = "#808080"))
-    + guides(fill = guide_legend(title = paste0(input$demographic, " breakdown")))
-    + labs(x = input$demographic, y = "Percent (%)")
-    + theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
-    + theme(plot.margin = margin(t = 10,
-                                 b = 10))
-    + scale_y_continuous(expand = c(0,0)),
-    tooltip = "text") %>%
-    layout(annotations = list(x = 0,
-                              y = 1,
-                              text = paste0("Graph displaying the ", tolower(input$demographic), " distribution for ", input$organisation1, " in ", input$year1),
-                              showarrow = F, xref='paper', yref='paper',
-                              xanchor='left', yanchor='bottom', xshift=0, yshift=0,
-                              font=list(size=14, colour="grey")),
-           hovermode = "x") %>%
-    config(toImageButtonOptions = list(filename=paste0("Distribution_", input$demographic, "_", input$organisation1, "_", input$year1), 
-                                       format = "png", 
-                                       width = 1200,
-                                       height = 700),
-           displaylogo = FALSE,
-           modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
-    
-    #Get rid of () that appear on legend when plotting ggplotly!
-    for (i in 1:length(myplot$x$data)){
-      if (!is.null(myplot$x$data[[i]]$name)){
-        myplot$x$data[[i]]$name =  gsub("\\(","",str_split(myplot$x$data[[i]]$name,",")[[1]][1])
-      }
-    }
-    
-    myplot
-    
-}
-  })
-  
-  #Demographic distribution graph 
-  
-  output$graph3<- renderPlotly({
-    
-    if(input$organisation1 %notin% CCG_small){
-    
-      ggplotly(ggplot(NULL, aes(x = Org_Name,
-                                y = Percent))
-               + geom_bar(data = subset(demographic_graph,
-                                        Organisation_breakdown == input$organisation_type1 &
-                                          Org_Name %notin% CCG_small &
-                                          Financial_Year == input$year1 &
-                                          MEASURE_NAME == input$demographic),
-                          aes(#fill = CURRENCY,
-                            fill = factor(CURRENCY,
-                                       levels = c("Least deprived 10%",
-                                                  "Less deprived 10-20%",
-                                                  "Less deprived 20-30%",
-                                                  "Less deprived 30-40%",
-                                                  "Less deprived 40-50%",
-                                                  "More deprived 40-50%",
-                                                  "More deprived 30-40%",
-                                                  "More deprived 20-30%",
-                                                  "More deprived 10-20%",
-                                                  "Most deprived 10%",
-                                                  "Unknown",
-                                                  "Under 18",
-                                                  "18-24",
-                                                  "25-34",
-                                                  "35-44",
-                                                  "45-54",
-                                                  "55-64",
-                                                  "65-74",
-                                                  "75 and over",
-                                                  "Not known",
-                                                  "Black or Black British",
-                                                  "Mixed",
-                                                  "Other Ethnic Groups",
-                                                  "White",
-                                                  "Not Known or Not Stated",
-                                                  "Female",
-                                                  "Male",
-                                                  "Not specified or not known")),
-                              text = paste0("Organisation: ", Org_Name, "\n",
-                                            "Demographic attribute: ", CURRENCY, "\n",
-                                            "Percent: ", Percent, "%")),
-                          stat = "identity",
-                          color = "white",
-                          position = position_stack(reverse = TRUE))
-               + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown")))
-               + scale_fill_manual(values = c('Female' = "#B5D4E9",
+      
+      myplot<- ggplotly(ggplot(NULL, 
+                               aes(x = factor(CURRENCY,
+                                              levels = c("Least deprived 10%",
+                                                         "Less deprived 10-20%",
+                                                         "Less deprived 20-30%",
+                                                         "Less deprived 30-40%",
+                                                         "Less deprived 40-50%",
+                                                         "More deprived 40-50%",
+                                                         "More deprived 30-40%",
+                                                         "More deprived 20-30%",
+                                                         "More deprived 10-20%",
+                                                         "Most deprived 10%",
+                                                         "Unknown",
+                                                         "Under 18",
+                                                         "18-24",
+                                                         "25-34",
+                                                         "35-44",
+                                                         "45-54",
+                                                         "55-64",
+                                                         "65-74",
+                                                         "75 and over",
+                                                         "Not known",
+                                                         "Asian or Asian British",
+                                                         "Black or Black British",
+                                                         "Mixed",
+                                                         "Other Ethnic Groups",
+                                                         "White",
+                                                         "Not Known or Not Stated",
+                                                         "Female",
+                                                         "Male",
+                                                         "Not specified or not known")),
+                                   y = Percent)) 
+                        
+                        + geom_bar(data = subset(demographic_graph,
+                                                 Organisation_breakdown == input$organisation_type1 &
+                                                   Org_Name ==  input$organisation1 &
+                                                   Financial_Year == input$year1 &
+                                                   MEASURE_NAME == input$demographic),
+                                   aes(fill = CURRENCY,
+                                       text = paste0("Organisation: ", input$organisation1, "\n",
+                                                     "Demographic attribute: ", CURRENCY, "\n",
+                                                     "Percent: ", Percent, "%")),
+                                   stat = "identity") 
+                        
+                        + geom_line(data = subset(demographic_graph,
+                                                  Org_Name == "England" &
+                                                    Financial_Year == input$year1 &
+                                                    MEASURE_NAME == input$demographic),
+                                    aes(group = 1,
+                                        color = "England",
+                                        text = paste0("Organisation: England", "\n",
+                                                      "Demographic attribute: ", CURRENCY, "\n",
+                                                      "Percent: ", Percent, "%"))
+                                    # ,
+                                    # color = "red"
+                        )
+                        
+                        + scale_fill_manual(values = c('Female' = "#B5D4E9",
                                                        'Male' = "#2E7EBB",
                                                        '18-24' = "#B5D4E9",
                                                        '25-34' = "#93C4DE",
@@ -1084,30 +983,162 @@ server <- function(input, output, session){
                                                        "Not known" = "#808080",
                                                        "Not Known or Not Stated" = "#808080",
                                                        "Not specified or not known" = "#808080"))
+                        
+                        + scale_color_manual(values = c("#FF0000"))
+                        #+ scale_color_discrete(name = NULL)
+                        
+                        
+                        + guides(fill = guide_legend(title = paste0(input$demographic, " breakdown")))
+                        + labs(x = input$demographic, 
+                               y = "Percent (%)",
+                               colour = NULL)
+                        + theme(axis.text.x = element_text(angle = 45, 
+                                                           vjust = 0.5, 
+                                                           hjust=1))
+                        + theme(plot.margin = margin(t = 20,
+                                                     b = 10,
+                                                     l = 10,
+                                                     r = 10))
+                        + scale_y_continuous(expand = c(0,0)),
+                        tooltip = "text") %>%
+        layout(annotations = list(x = 0,
+                                  y = 1,
+                                  text = paste0("Graph displaying the ", tolower(input$demographic), " distribution for ", input$organisation1, " in ", input$year1),
+                                  showarrow = F, 
+                                  xref='paper', 
+                                  yref='paper',
+                                  xanchor='left', 
+                                  yanchor='bottom', 
+                                  xshift=0, 
+                                  yshift=0,
+                                  font=list(size=14, 
+                                            colour="grey")),
+               hovermode = "x") %>%
+        config(toImageButtonOptions = list(filename=paste0("Distribution_", input$demographic, "_", input$organisation1, "_", input$year1), 
+                                           format = "png", 
+                                           width = 1200,
+                                           height = 700),
+               displaylogo = FALSE,
+               modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
+      
+      #Get rid of () that appear on legend when plotting ggplotly!
+      for (i in 1:length(myplot$x$data)){
+        if (!is.null(myplot$x$data[[i]]$name)){
+          myplot$x$data[[i]]$name =  gsub("\\(","",str_split(myplot$x$data[[i]]$name,",")[[1]][1])
+        }
+      }
+      
+      myplot
+      
+    }
+  })
+  
+  #Demographic distribution graph 
+  
+  output$graph3<- renderPlotly({
+    
+    if(input$organisation1 %notin% CCG_small){
+      
+      ggplotly(ggplot(NULL, aes(x = Org_Name,
+                                y = Percent))
+               + geom_bar(data = subset(demographic_graph,
+                                        Organisation_breakdown == input$organisation_type1 &
+                                          Org_Name %notin% CCG_small &
+                                          Financial_Year == input$year1 &
+                                          MEASURE_NAME == input$demographic),
+                          aes(#fill = CURRENCY,
+                            fill = factor(CURRENCY,
+                                          levels = c("Least deprived 10%",
+                                                     "Less deprived 10-20%",
+                                                     "Less deprived 20-30%",
+                                                     "Less deprived 30-40%",
+                                                     "Less deprived 40-50%",
+                                                     "More deprived 40-50%",
+                                                     "More deprived 30-40%",
+                                                     "More deprived 20-30%",
+                                                     "More deprived 10-20%",
+                                                     "Most deprived 10%",
+                                                     "Unknown",
+                                                     "Under 18",
+                                                     "18-24",
+                                                     "25-34",
+                                                     "35-44",
+                                                     "45-54",
+                                                     "55-64",
+                                                     "65-74",
+                                                     "75 and over",
+                                                     "Not known",
+                                                     "Asian or Asian British",
+                                                     "Black or Black British",
+                                                     "Mixed",
+                                                     "Other Ethnic Groups",
+                                                     "White",
+                                                     "Not Known or Not Stated",
+                                                     "Female",
+                                                     "Male",
+                                                     "Not specified or not known")),
+                            text = paste0("Organisation: ", Org_Name, "\n",
+                                          "Demographic attribute: ", CURRENCY, "\n",
+                                          "Percent: ", Percent, "%")),
+                          stat = "identity",
+                          color = "white",
+                          position = position_stack(reverse = TRUE))
+               + guides(fill=guide_legend(title=paste0(input$demographic, " breakdown")))
+               + scale_fill_manual(values = c('Female' = "#B5D4E9",
+                                              'Male' = "#2E7EBB",
+                                              '18-24' = "#B5D4E9",
+                                              '25-34' = "#93C4DE",
+                                              '35-44' = "#6BAED6",
+                                              '45-54' = "#4A97C9",
+                                              '55-64' = "#1664AB",
+                                              '65-74' = "#084A92",
+                                              '75 and over' = "#08306B",
+                                              'Under 18' = "#E3EEF8",
+                                              "Asian or Asian British" = "#CFE1F2",
+                                              "Black or Black British" = "#93C4DE",
+                                              "Mixed" = "#1664AB",
+                                              "Other Ethnic Groups" = "#084A92",
+                                              "White" = "#08306B",
+                                              "Least deprived 10%" = "#F7FBFF",
+                                              "Less deprived 10-20%" = "#E3EEF8",
+                                              "Less deprived 20-30%" = "#CFE1F2",
+                                              "Less deprived 30-40%" = "#B5D4E9",
+                                              "Less deprived 40-50%" = "#93C4DE",
+                                              "More deprived 40-50%" = "#6BAED6",
+                                              "More deprived 30-40%" = "#4A97C9",
+                                              "More deprived 20-30%" = "#2E7EBB",
+                                              "More deprived 10-20%" = "#1664AB",
+                                              "Most deprived 10%" = "#08306B",
+                                              "Unknown" = "#808080",
+                                              "Not known" = "#808080",
+                                              "Not Known or Not Stated" = "#808080",
+                                              "Not specified or not known" = "#808080"))
                + coord_flip()
                + theme(axis.title.y = element_blank())
                + labs(y = "Percent (%)")
-        + geom_bar(data = demographic_graph %>%
-                     filter(Organisation_breakdown == input$organisation_type1 &
-                              Org_Name == input$organisation1 &
-                              Org_Name %notin% CCG_small &
-                              Financial_Year == input$year1 &
-                              MEASURE_NAME == input$demographic) %>%
-                     group_by(Organisation_breakdown,
-                              Org_Name,
-                              Financial_Year) %>%
-                     summarise(Percent = sum(Percent)),
-                   aes(x = Org_Name,
-                       y = Percent),
-                   size = 1.3,
-                   color = "black",
-                   stat = "identity",
-                   fill = "transparent",
-                   position = position_stack(reverse = TRUE))
-        + theme(plot.margin = margin(t = 10,
-                                     b = 10))
-        + scale_y_continuous(expand = c(0,0)),
-        tooltip = "text") %>%
+               + geom_bar(data = demographic_graph %>%
+                            filter(Organisation_breakdown == input$organisation_type1 &
+                                     Org_Name == input$organisation1 &
+                                     Org_Name %notin% CCG_small &
+                                     Financial_Year == input$year1 &
+                                     MEASURE_NAME == input$demographic) %>%
+                            group_by(Organisation_breakdown,
+                                     Org_Name,
+                                     Financial_Year) %>%
+                            summarise(Percent = sum(Percent)),
+                          aes(x = Org_Name,
+                              y = Percent),
+                          size = 1.3,
+                          color = "black",
+                          stat = "identity",
+                          fill = "transparent",
+                          position = position_stack(reverse = TRUE))
+               + theme(plot.margin = margin(t = 20,
+                                            b = 10,
+                                            l = 10,
+                                            r = 10))
+               + scale_y_continuous(expand = c(0,0)),
+               tooltip = "text") %>%
         layout(annotations = list(x = 0,
                                   y = 1,
                                   text = paste0("Proportion of ", tolower(input$demographic), " breakdown by each ", "\n", input$organisation_type1, " in ", input$year1),
@@ -1119,14 +1150,19 @@ server <- function(input, output, session){
                                   xshift=0,
                                   yshift=0,
                                   font=list(size=14, colour="grey")),
-               legend = list(orientation = "v")) %>%
+               legend = list(orientation = "v"),
+               height = if(input$organisation_type1 == "Clinical Commissioning Group of Residence"){
+                 1200
+               } else if(input$organisation_type1 == "Integrated Care Board of Residence"){
+                 1000
+               } else {600}) %>%
         config(toImageButtonOptions = list(filename=paste0("Proportion_", input$demographic, "_", input$organisation_type1, "_", input$year1),
                                            format = "png",
                                            width = 1200,
                                            height = 700),
                displaylogo = FALSE,
                modeBarButtonsToRemove = c("zoom2d", "lasso2d", "select2d", "autoScale2d"))
-
+      
     }
   })
   
@@ -1177,9 +1213,9 @@ server <- function(input, output, session){
                                         exportOptions = list(
                                           modifier = list(page = "all")
                                         )))))
-      })
+  })
   
-  }
+}
 
 
 
