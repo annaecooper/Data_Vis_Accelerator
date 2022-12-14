@@ -16,8 +16,8 @@ pacman::p_load(ggplot2,
                shiny,
                plotly,
                data.table,
-               dygraph,
-               htmlwidget,
+               #dygraph,
+               #htmlwidget,
                sf,
                Hmisc,
                shinyjs,
@@ -26,8 +26,8 @@ pacman::p_load(ggplot2,
                shades,
                shinyalert,
                mapview,
-               mapshot,
-               phantomjs,
+               #mapshot,
+               #phantomjs,
                textclean
 )
 
@@ -695,6 +695,7 @@ server <- function(input, output, session){
     )
     
     borders<- ifelse(mapFiltered()$Org_Name %in% input$ICB, "red", "grey")
+
     
     leaflet(mapFiltered()) %>%
       addTiles() %>%
@@ -779,7 +780,7 @@ server <- function(input, output, session){
       paste0("Map_ICB_bariatric_surgery_", input$measure, "_", input$year, ".png")
     }, 
     content = function(file) {
-      mapshot( x = user.created.map(), 
+      mapview::mapshot( x = user.created.map(), 
                file = file, 
                cliprect = "viewport", # the clipping rectangle matches the height & width from the viewing port
                selfcontained = FALSE # when this was not specified, the function for produced a PDF of two pages: one of the leaflet map, the other a blank page.
